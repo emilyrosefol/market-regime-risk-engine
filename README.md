@@ -1,171 +1,165 @@
-# Market Regime Risk Engine
+# Market Regime & Risk Engine
 
-> A Python-based quantitative trading research engine that detects market regimes, identifies fake breakout opportunities, performs systematic backtesting, and evaluates strategy performance across multiple cryptocurrency markets.
+An explainable, risk-first trading research platform designed to classify
+market conditions, evaluate rule-based trade setups, manage simulated
+positions, and measure strategy behaviour through automated forward testing.
 
----
-
-# Overview
-
-The Market Regime Risk Engine is a quantitative research project built entirely in Python to explore how market structure, volatility, and trend behavior influence trading performance.
-
-Rather than predicting market direction with machine learning, this engine focuses on building a transparent, explainable decision framework using technical market features and systematic risk management.
-
-The project has evolved through more than 40 development versions and continues to expand with research, validation, visualization, and paper-trading capabilities.
+The project is currently running in paper-trading mode using completed
+hourly market candles.
 
 ---
 
-# Features
+## Problem
 
-- Multi-market backtesting (BTC, ETH, SOL, ETC)
-- Market regime classification
-- Fake breakout detection
-- ATR-based stop loss and take profit engine
-- Edge scoring system
-- Position sizing using fixed risk (R-based accounting)
-- Walk-forward validation
-- Yearly performance validation
-- Market comparison analysis
-- Automatic equity curve generation
-- Drawdown analysis
-- CSV export of trades and performance
-- Research visualization with Matplotlib
+Many trading strategies apply the same entry and risk rules regardless of
+market conditions.
+
+A strategy that behaves well in a trending market may perform poorly in a
+range, while changes in volatility can significantly alter the risk of an
+otherwise similar setup.
+
+This project explores a different approach:
+
+**classify the environment first, then decide whether risk should be taken.**
 
 ---
 
-# Project Workflow
+## System Architecture
 
-```text
-Yahoo Finance
-      │
-      ▼
-Historical Market Data
-      │
-      ▼
-Feature Engineering
-(MA • ATR • RSI • Volatility)
-      │
-      ▼
-Market Regime Classification
-      │
-      ▼
-Signal Generation
-(Fake Breakouts)
-      │
-      ▼
-Execution Engine
-      │
-      ▼
-Risk Accounting
-      │
-      ▼
-Performance Analysis
-      │
-      ▼
-Charts + CSV Reports
-```
+Market Data  
+↓  
+Completed Candle Validation  
+↓  
+Technical Indicators  
+↓  
+Market Regime Classification  
+↓  
+Rule-Based Signal Generation  
+↓  
+Signal Quality / Risk Filters  
+↓  
+Position Manager  
+↓  
+Paper Trade Execution  
+↓  
+Trade & Signal Logs  
+↓  
+Forward-Test Analytics Dashboard
 
 ---
 
-# Technologies
+## Current Features
+
+### Market Regime Classification
+- Classifies current market conditions
+- Separates market context from trade execution
+- Allows strategy behaviour to depend on regime
+
+### Signal Engine
+- Generates rule-based candidate setups
+- Uses technical and volatility information
+- Can reject setups that fail predefined requirements
+
+### Risk & Position Management
+- Determines whether a signal qualifies for execution
+- Tracks simulated open positions
+- Applies predefined stop-loss and profit-target logic
+- Keeps execution separate from signal generation
+
+### Automated Paper Trading
+- Evaluates completed hourly candles
+- Runs without placing real-money orders
+- Records both trades and rejected opportunities
+- Maintains persistent signal and position logs
+
+### Forward-Test Monitoring
+The dashboard tracks:
+
+- Candle checks
+- Raw signals
+- Qualifying trades
+- No-trade decisions
+- Rejection reasons
+- Simulated equity
+- Win rate
+- Total R
+- Average R
+- Profit factor
+- Drawdown
+
+This makes it possible to evaluate not only strategy performance, but also
+why the system chooses not to trade.
+
+---
+
+## Design Philosophy
+
+- Risk first
+- Explainability over unnecessary complexity
+- Systems over isolated signals
+- Separate signal generation from execution
+- Measure rejected opportunities as well as executed trades
+- Validate with forward data before changing strategy parameters
+
+---
+
+## Current Testing Stage
+
+The engine is currently undergoing automated paper forward testing.
+
+Rather than optimizing parameters after every observation, the current
+version is being allowed to accumulate unseen market observations.
+
+Initial review checkpoints:
+
+- 50 completed candle checks
+- 100 completed candle checks
+- First qualifying paper trades
+- Sufficient closed trades for meaningful performance analysis
+
+No real capital is being deployed.
+
+---
+
+## Technology
 
 - Python
-- Pandas
-- NumPy
-- Matplotlib
-- yfinance
-- Git
-- GitHub
+- pandas
+- Streamlit
+- CSV-based persistent logging
+- Automated scheduled execution
+- Git / GitHub
 
 ---
 
-# Current Research Results
+## Limitations
 
-Current validation includes:
-
-- Multi-market comparison
-- Walk-forward testing
-- Yearly validation
-- Edge score analysis
-- Equity curve visualization
-- Drawdown visualization
-- Automatic CSV reporting
-
-Example outputs include:
-
-- Market comparison charts
-- Equity curves
-- Drawdown curves
-- Trade ledger exports
+- Current forward-test sample size is still small
+- The system is rule-based rather than predictive
+- Results may vary significantly across market regimes and assets
+- Historical or paper performance does not guarantee live performance
+- Transaction costs, liquidity, slippage, and execution behaviour require
+  further validation before any live deployment
 
 ---
 
-# Design Philosophy
+## Roadmap
 
-The engine was designed around several principles:
-
-- Explainability over complexity
-- Risk-first decision making
-- Systematic execution
-- Reproducible research
-- Continuous iterative improvement
-
-Rather than fitting models to maximize historical returns, the project emphasizes understanding why strategies perform under different market regimes.
-
----
-
-# Current Limitations
-
-This project is an active research system.
-
-Current limitations include:
-
-- Historical backtesting only
-- Simplified execution assumptions
-- No slippage model
-- No exchange connectivity
-- No live order execution
-- Limited trade sample on some markets
-
-These limitations are intentionally documented as part of the ongoing research process.
+- Expand forward-test dataset
+- Validate strategy behaviour across additional market conditions
+- Improve trade and rejection analytics
+- Add multi-asset monitoring
+- Compare regime-specific performance
+- Strengthen risk analytics
+- Explore statistical regime models
+- Investigate machine-learning classification after establishing a
+  reliable rule-based baseline
 
 ---
 
-# Roadmap
+## Project Status
 
-## Phase 1 ✅
+**Active Development — Automated Paper Forward Testing**
 
-- Historical backtesting engine
-- Market comparison
-- Edge scoring
-- Walk-forward validation
-- Research visualization
-
-## Phase 2 (In Progress)
-
-- GitHub portfolio improvements
-- Research documentation
-- Paper trading engine
-- Signal logging
-
-## Phase 3
-
-- Live paper trading dashboard
-- Portfolio-level risk management
-- Multi-strategy framework
-- Performance analytics dashboard
-
----
-
-# About This Project
-
-This project was built as a long-term software engineering and quantitative research initiative.
-
-Its primary goals are:
-
-- Improve Python software engineering skills
-- Develop systematic trading research workflows
-- Learn quantitative risk management
-- Build a portfolio demonstrating data engineering, analytics, and algorithmic trading concepts
-
-The project continues to evolve through iterative development, testing, and validation.
-
+The current priority is collecting forward-test evidence and evaluating
+whether the strategy behaves as expected outside its development data.
