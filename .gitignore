@@ -20,3 +20,30 @@ Thumbs.db
 data/*.csv
 data/*.parquet
 data/*.pkl
+
+# Generated analysis / paper-trading outputs
+analysis/*.csv
+analysis/*.parquet
+analysis/*.pkl
+
+src/analysis/*.csv
+src/analysis/*.parquet
+src/analysis/*.pkl
+
+src/data/*.csv
+src/data/*.parquet
+src/data/*.pkl
+
+# Paper-trading logs
+*signal_log*.csv
+*trade_log*.csv
+*decision_summary*.csv
+
+# Generated analysis charts
+src/analysis/*.png
+src/analysis/**/*.png
+
+# Generated test/output files in nested analysis folders
+src/analysis/**/*.csv
+src/analysis/**/*.parquet
+src/analysis/**/*.pkl
