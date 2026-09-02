@@ -10,6 +10,7 @@ No brokerage connection is included. The script cannot place real orders.
 
 from __future__ import annotations
 
+import csv
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import os
 
 
 # ======================
@@ -24,7 +26,7 @@ import yfinance as yf
 # ======================
 
 ENGINE_VERSION = "paper_trader_v3_position_manager"
-TICKER = "ETC-USD"
+TICKER = os.getenv("PAPER_MARKET", "ETC-USD")
 INTERVAL = "1h"
 PERIOD = "60d"
 
@@ -47,16 +49,29 @@ CONSERVATIVE_IF_BOTH_HIT = True
 DEBUG = False
 LOG_WAIT_DECISIONS = True
 
+ENGINE_RUN_LOG_FIELDS = [
+    "started_at_utc",
+    "finished_at_utc",
+    "market",
+    "interval",
+    "engine_version",
+    "status",
+    "rows_before",
+    "rows_after",
+    "new_signal_rows",
+    "candle_before",
+    "candle_after",
+    "error",
+]
+
 
 # ======================
 # PATHS
 # ======================
 
-
 def project_root() -> Path:
     """Return the directory containing this script."""
     return Path(__file__).resolve().parent
-
 
 def analysis_dir() -> Path:
     """Create and return the paper-trading output directory."""
@@ -64,18 +79,70 @@ def analysis_dir() -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
 
+def market_slug() -> str:
+    return TICKER.replace("-", "_").lower()
+
 
 def signal_log_path() -> Path:
-    return analysis_dir() / "paper_trade_signal_log.csv"
+    # Preserve existing ETC files so the current dashboard keeps working.
+    if TICKER == "ETC-USD":
+        return analysis_dir() / "paper_trade_signal_log.csv"
+
+    return analysis_dir() / f"paper_trade_signal_log_{market_slug()}.csv"
 
 
 def position_state_path() -> Path:
-    return analysis_dir() / "paper_trade_position_state.csv"
+    if TICKER == "ETC-USD":
+        return analysis_dir() / "paper_trade_position_state.csv"
+
+    return analysis_dir() / f"paper_trade_position_state_{market_slug()}.csv"
 
 
 def trade_history_path() -> Path:
-    return analysis_dir() / "paper_trade_trades.csv"
+    if TICKER == "ETC-USD":
+        return analysis_dir() / "paper_trade_trades.csv"
 
+    return analysis_dir() / f"paper_trade_trades_{market_slug()}.csv"
+
+def engine_run_log_path() -> Path:
+    return analysis_dir() / "paper_engine_run_log.csv"
+
+
+def signal_log_snapshot() -> tuple[int, str]:
+    """Return the current row count and newest candle in this market's signal log."""
+    path = signal_log_path()
+
+    if not path.exists() or path.stat().st_size == 0:
+        return 0, ""
+
+    try:
+        signal_log = pd.read_csv(path)
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError):
+        return 0, ""
+
+    candle_after = ""
+    if "candle_time_utc" in signal_log.columns and not signal_log.empty:
+        candle_times = pd.to_datetime(
+            signal_log["candle_time_utc"],
+            errors="coerce",
+            utc=True,
+        ).dropna()
+        if not candle_times.empty:
+            candle_after = candle_times.max().isoformat()
+
+    return len(signal_log), candle_after
+
+
+def append_engine_run_log(record: dict[str, Any]) -> None:
+    """Append one engine execution record to the shared audit log."""
+    path = engine_run_log_path()
+    write_header = not path.exists() or path.stat().st_size == 0
+
+    with path.open("a", newline="", encoding="utf-8") as audit_file:
+        writer = csv.DictWriter(audit_file, fieldnames=ENGINE_RUN_LOG_FIELDS)
+        if write_header:
+            writer.writeheader()
+        writer.writerow(record)
 
 # ======================
 # DATA
@@ -504,7 +571,30 @@ def manage_open_position(
 
     return position, None, processed
 
+def last_logged_candle_time() -> pd.Timestamp | None:
+    """Return the newest candle already stored in the signal log."""
+    path = signal_log_path()
 
+    if not path.exists() or path.stat().st_size == 0:
+        return None
+    try:
+        log = pd.read_csv(path)
+    except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError):
+        return None
+
+    if "candle_time_utc" not in log.columns or log.empty:
+        return None
+
+    times = pd.to_datetime(
+        log["candle_time_utc"],
+        errors="coerce",
+        utc=True,
+    ).dropna()
+
+    if times.empty:
+        return None
+
+    return times.max()
 # ======================
 # REPORTING
 # ======================
@@ -591,7 +681,7 @@ def print_paths() -> None:
 # ======================
 
 
-def main() -> None:
+def run_engine_cycle() -> None:
     """Run one stateful paper-trading cycle."""
     try:
         df = download_recent_data()
@@ -599,11 +689,33 @@ def main() -> None:
         df = add_features(df)
         df = add_signals(df)
 
+        last_logged = last_logged_candle_time()
+
+        if last_logged is None:
+            candles_to_log = df.tail(1)
+        else:
+            candle_times = pd.to_datetime(df["timestamp"], utc=True)
+            candles_to_log = df[candle_times > last_logged]
+
+        logged_count = 0
+
+        for _, candle in candles_to_log.iterrows():
+            decision = evaluate_candle(candle)
+
+            should_log = (
+                    LOG_WAIT_DECISIONS
+                    or decision["decision"] != "WAIT"
+            )
+
+            if should_log and append_signal_log(decision):
+                logged_count += 1
+
+        # Only the newest completed candle is eligible to open a NEW position.
         latest_decision = evaluate_candle(df.iloc[-1])
-        should_log = LOG_WAIT_DECISIONS or latest_decision["decision"] != "WAIT"
-        logged = append_signal_log(latest_decision) if should_log else False
+        logged = logged_count > 0
 
         print_header()
+        print(f"Catch-up candles logged: {logged_count}")
         position = load_position_state()
 
         if position is not None:
@@ -632,6 +744,53 @@ def main() -> None:
         print("\nPAPER TRADER ERROR")
         print(f"{type(exc).__name__}: {exc}")
         raise SystemExit(1) from exc
+
+
+def main() -> None:
+    """Run one engine cycle and append its integrity audit record."""
+    started_at_utc = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    rows_before, candle_before = signal_log_snapshot()
+
+    try:
+        run_engine_cycle()
+    except BaseException as exc:
+        rows_after, candle_after = signal_log_snapshot()
+        audit_error = exc.__cause__ if exc.__cause__ is not None else exc
+        append_engine_run_log(
+            {
+                "started_at_utc": started_at_utc,
+                "finished_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "market": TICKER,
+                "interval": INTERVAL,
+                "engine_version": ENGINE_VERSION,
+                "status": "ERROR",
+                "rows_before": rows_before,
+                "rows_after": rows_after,
+                "new_signal_rows": max(rows_after - rows_before, 0),
+                "candle_before": candle_before,
+                "candle_after": candle_after,
+                "error": f"{type(audit_error).__name__}: {audit_error}",
+            }
+        )
+        raise
+
+    rows_after, candle_after = signal_log_snapshot()
+    append_engine_run_log(
+        {
+            "started_at_utc": started_at_utc,
+            "finished_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "market": TICKER,
+            "interval": INTERVAL,
+            "engine_version": ENGINE_VERSION,
+            "status": "SUCCESS",
+            "rows_before": rows_before,
+            "rows_after": rows_after,
+            "new_signal_rows": max(rows_after - rows_before, 0),
+            "candle_before": candle_before,
+            "candle_after": candle_after,
+            "error": "",
+        }
+    )
 
 
 if __name__ == "__main__":
