@@ -47,3 +47,35 @@ src/analysis/**/*.png
 src/analysis/**/*.csv
 src/analysis/**/*.parquet
 src/analysis/**/*.pkl
+
+# Local environment recovery artifacts
+/.venv-python314-backup-*/
+/requirements.venv-before-repair.txt
+
+# Generated databases and SQLite sidecars (analysis directories only)
+/src/analysis/**/*.db
+/src/analysis/**/*.db-*
+/src/analysis/**/*.sqlite
+/src/analysis/**/*.sqlite-*
+/src/analysis/**/*.sqlite3
+/src/analysis/**/*.sqlite3-*
+/analysis/**/*.db
+/analysis/**/*.db-*
+/analysis/**/*.sqlite
+/analysis/**/*.sqlite-*
+/analysis/**/*.sqlite3
+/analysis/**/*.sqlite3-*
+
+# Generated logs, CSV backups, and additional chart formats
+/src/analysis/**/*.log
+/src/analysis/**/*.log.*
+/src/analysis/**/*.csv.*
+/src/analysis/**/*.svg
+/src/analysis/**/*.pdf
+/analysis/**/*.csv
+/analysis/**/*.csv.*
+/analysis/**/*.log
+/analysis/**/*.log.*
+/analysis/**/*.png
+/analysis/**/*.svg
+/analysis/**/*.pdf
