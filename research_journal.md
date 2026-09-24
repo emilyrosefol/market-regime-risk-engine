@@ -268,3 +268,202 @@ Target: approximately 3–4 days from this entry, or earlier if:
 - the first paper position opens or closes,
 - an unexplained infrastructure issue appears,
 - either market becomes stale for an extended period.
+
+
+## Entry 002 — 2026-09-24
+
+### Review Window
+Previous review: 2026-09-02  
+Current review: 2026-09-24
+
+Strategy parameters remained frozen during this review period. No RSI, ATR,
+edge-score, regime, stop-loss, take-profit, or risk parameters were changed in
+response to forward-test results.
+
+### Current Forward-Test Snapshot
+
+Portfolio:
+- Signal observations: 1,547
+- Completed trades: 1
+- Markets: BTC-USD, ETC-USD
+
+BTC-USD:
+- Observations: 722
+- TREND: 694
+- RANGE: 28
+- Average RSI: 51.35
+- Average ATR%: 0.533%
+- RSI rejection rate: 40.0%
+- ATR rejection rate: 1.8%
+- Completed trades: 1
+
+ETC-USD:
+- Observations: 825
+- TREND: 810
+- RANGE: 15
+- Average RSI: 51.45
+- Average ATR%: 1.244%
+- RSI rejection rate: 39.6%
+- ATR rejection rate: 56.8%
+- Completed trades: 0
+
+### Change Since Entry 001
+
+BTC observations increased from 213 to 722 (+509).
+
+ETC observations increased from 316 to 825 (+509).
+
+The previously observed difference between the markets remains visible:
+ETC continues to experience substantially more ATR-filter rejection than BTC.
+
+BTC and ETC now have similar average RSI values, while their average ATR%
+and ATR rejection rates remain materially different.
+
+This is descriptive evidence only. It does not justify market-specific
+parameter changes at this stage.
+
+### Regime Distribution
+
+TREND continues to dominate the forward-test sample.
+
+BTC:
+- TREND: 694 / 722 (~96.1%)
+- RANGE: 28 / 722 (~3.9%)
+
+ETC:
+- TREND: 810 / 825 (~98.2%)
+- RANGE: 15 / 825 (~1.8%)
+
+RANGE observations remain limited, particularly for ETC. Conclusions about
+RANGE behavior therefore remain sample-size constrained.
+
+### First Completed Forward-Test Trade
+
+Market: BTC-USD
+Direction: SHORT
+Entry signal: GO_FAKE_SHORT
+Entry regime: RANGE
+Entry candle: 2026-09-13 17:00 UTC
+Position opened: 2026-09-13 18:05:03 UTC
+
+Entry price: $77,298.59
+Stop price: $77,532.80
+Target price: $76,830.18
+
+Entry ATR: $234.21
+Entry RSI: 53.69
+Edge score: 80
+Risk: $100
+Simulated units: 0.42697 BTC
+Bars held: 5
+
+Exit candle: 2026-09-13 22:00 UTC
+Closure processed: 2026-09-14 01:45:42 UTC
+Exit reason: TAKE_PROFIT
+Exit price: $76,830.18
+Result: +2.0R
+Paper P&L: +$200
+
+Signal history showed WAIT decisions before the qualifying setup. At the
+17:00 UTC candle, BTC was classified as RANGE and GO_FAKE_SHORT passed all
+entry filters with an edge score of 80.
+
+The regime later changed to TREND while the position was being managed.
+The position ultimately reached its predefined take-profit.
+
+This is the first completed trade and is not sufficient evidence to evaluate
+strategy profitability, win rate, expectancy, or robustness.
+
+### Engine / Infrastructure Integrity
+
+Recorded engine runs:
+
+BTC:
+- Total runs: 166
+- Successful runs: 144
+- Non-success runs: 22
+- New signal rows logged: 602
+- Latest recorded run: 2026-09-24 01:12:14 UTC
+
+ETC:
+- Total runs: 190
+- Successful runs: 164
+- Non-success runs: 26
+- New signal rows logged: 629
+- Latest recorded run: 2026-09-24 01:17:32 UTC
+
+During this review period, forward-test infrastructure experienced scheduler
+and execution interruptions. Investigation identified issues including
+user-login state and working-directory configuration.
+
+The scheduled tasks were updated with the project directory as the Start In
+directory. Manual Task Scheduler tests subsequently returned 0x0, and later
+engine logs recorded successful ETC and BTC executions and catch-up behavior.
+
+These infrastructure issues are documented separately from strategy
+performance. Missed execution or delayed processing should not be interpreted
+as a trading-strategy failure.
+
+### Observations
+
+1. TREND remains overwhelmingly dominant in both market samples.
+2. RANGE observations remain relatively scarce.
+3. ETC continues to be much more frequently constrained by the ATR filter.
+4. BTC ATR rejection remains comparatively uncommon.
+5. RSI rejection is now similar across the two markets.
+6. The first completed trade originated from a BTC RANGE observation.
+7. One successful trade provides essentially no statistical evidence about
+   long-run strategy performance.
+
+### Hypotheses to Continue Observing
+
+- Market-specific volatility behavior may eventually warrant investigation,
+  but current evidence does not justify parameter changes.
+- ETC's higher ATR rejection may reflect persistent differences in volatility
+  behavior or volatility episodes.
+- BTC may continue to produce qualifying setups differently from ETC.
+- Low trade frequency may be an inherent property of the frozen strategy.
+- RANGE performance cannot be meaningfully assessed until substantially more
+  RANGE observations and completed trades are collected.
+
+### Things I Am Tempted to Change
+
+- ATR limits
+- RSI limits
+- Edge-score threshold
+- Parameters to increase trade frequency
+
+### Why I Am Not Changing Them
+
+The prospective forward test is designed to evaluate the frozen strategy,
+not continually optimize it against newly observed data.
+
+There is currently only one completed trade. Changing parameters now would
+contaminate the forward test and make later results harder to interpret.
+
+### Current Conclusion
+
+The forward test is continuing to collect useful data.
+
+The system has now demonstrated one complete prospective trade lifecycle:
+market observation -> regime classification -> qualifying signal -> position
+opening -> position management -> predefined exit -> trade logging -> research
+database ingestion.
+
+This confirms an important operational milestone, but does not validate the
+strategy.
+
+No strategy changes are justified at this time.
+
+### Next Review
+
+Continue collecting observations and completed trades under the frozen
+protocol.
+
+At the next review:
+- Recheck regime distribution.
+- Recheck RSI and ATR rejection behavior by market.
+- Review additional completed trades individually.
+- Compare cumulative R only after the trade sample grows.
+- Continue monitoring scheduler and engine-run integrity.
+- 

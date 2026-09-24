@@ -1,6 +1,159 @@
 -- Market Regime Risk Engine: beginner-friendly research queries
 -- Run after: .\.venv\Scripts\python.exe src\build_research_db.py
 
+
+    -- ============================================================
+-- CURRENT VS ENTRY 001 BASELINE COMPARISON
+-- Compares the latest research database snapshot to Journal Entry 001.
+-- ============================================================
+
+
+
+WITH baseline AS (
+    SELECT
+        'BTC-USD' AS market,
+        213 AS baseline_observations,
+        205 AS baseline_trend,
+        8 AS baseline_range,
+        43.7 AS baseline_rsi_rejection_pct,
+        4.2 AS baseline_atr_rejection_pct,
+        50.08 AS baseline_avg_rsi,
+        0.601 AS baseline_avg_atr_pct,
+        0 AS baseline_completed_trades
+
+    UNION ALL
+
+    SELECT
+        'ETC-USD',
+        316,
+        305,
+        11,
+        30.1,
+        57.9,
+        49.51,
+        1.255,
+        0
+),
+
+current_stats AS (
+    SELECT
+        market,
+        COUNT(*) AS observations,
+
+        SUM(
+            CASE
+                WHEN regime = 'TREND'
+                THEN 1 ELSE 0
+            END
+        ) AS trend_observations,
+
+        SUM(
+            CASE
+                WHEN regime = 'RANGE'
+                THEN 1 ELSE 0
+            END
+        ) AS range_observations,
+
+        ROUND(
+            100.0 * SUM(
+                CASE
+                    WHEN reason LIKE '%RSI outside 30-60%'
+                    THEN 1 ELSE 0
+                END
+            ) / COUNT(*),
+            1
+        ) AS rsi_rejection_pct,
+
+        ROUND(
+            100.0 * SUM(
+                CASE
+                    WHEN reason LIKE '%ATR percentage outside limits%'
+                    THEN 1 ELSE 0
+                END
+            ) / COUNT(*),
+            1
+        ) AS atr_rejection_pct,
+
+        ROUND(AVG(rsi), 2) AS avg_rsi,
+
+        ROUND(
+            AVG(atr_pct) * 100,
+            3
+        ) AS avg_atr_pct
+
+    FROM signal_checks
+    GROUP BY market
+),
+
+trade_stats AS (
+    SELECT
+        market,
+        COUNT(*) AS completed_trades
+    FROM trades
+    GROUP BY market
+)
+
+SELECT
+    c.market,
+
+    c.observations,
+    c.observations - b.baseline_observations
+        AS observation_change,
+
+    c.trend_observations,
+    c.trend_observations - b.baseline_trend
+        AS trend_change,
+
+    c.range_observations,
+    c.range_observations - b.baseline_range
+        AS range_change,
+
+    c.rsi_rejection_pct,
+    ROUND(
+        c.rsi_rejection_pct
+        - b.baseline_rsi_rejection_pct,
+        1
+    ) AS rsi_rejection_change,
+
+    c.atr_rejection_pct,
+    ROUND(
+        c.atr_rejection_pct
+        - b.baseline_atr_rejection_pct,
+        1
+    ) AS atr_rejection_change,
+
+    c.avg_rsi,
+    ROUND(
+        c.avg_rsi - b.baseline_avg_rsi,
+        2
+    ) AS avg_rsi_change,
+
+    c.avg_atr_pct,
+    ROUND(
+        c.avg_atr_pct - b.baseline_avg_atr_pct,
+        3
+    ) AS avg_atr_change,
+
+    COALESCE(t.completed_trades, 0)
+        AS completed_trades,
+
+    COALESCE(t.completed_trades, 0)
+        - b.baseline_completed_trades
+        AS completed_trade_change
+
+FROM current_stats c
+
+JOIN baseline b
+    ON c.market = b.market
+
+LEFT JOIN trade_stats t
+    ON c.market = t.market
+
+ORDER BY c.market;
+""")
+
+
+
 -- 1. Observations per market
 SELECT market, COUNT(*) AS observations
 FROM signal_checks
