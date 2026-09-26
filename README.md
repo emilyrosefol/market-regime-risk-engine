@@ -26,25 +26,30 @@ This project explores a different approach:
 
 ## System Architecture
 
-Market Data  
-↓  
-Completed Candle Validation  
-↓  
-Technical Indicators  
-↓  
-Market Regime Classification  
-↓  
-Rule-Based Signal Generation  
-↓  
-Signal Quality / Risk Filters  
-↓  
-Position Manager  
-↓  
-Paper Trade Execution  
-↓  
-Trade & Signal Logs  
-↓  
-Forward-Test Analytics Dashboard
+```text
+Market Data
+    ↓
+Completed Candle Validation
+    ↓
+Feature Engineering
+    ↓
+Market Regime Classification
+    ↓
+Rule-Based Signal Generation
+    ↓
+Signal Qualification & Risk Filters
+    ↓
+Position Manager
+    ↓
+Paper Trade Execution
+    ↓
+CSV Source-of-Truth Logs
+    ↓
+├── Streamlit Monitoring Dashboard
+├── Engine Run Audit Log
+└── SQLite Research Database
+        ↓
+    SQL Research & Forward-Test Analysis
 
 ---
 
@@ -92,6 +97,46 @@ why the system chooses not to trade.
 
 ---
 
+## Research & Validation
+
+### Prospective Forward Testing
+
+The current strategy is being evaluated through automated paper forward testing
+on ETC-USD and BTC-USD using completed hourly candles.
+
+A documented forward-test protocol freezes the active strategy configuration,
+including signal rules, filters, risk parameters, and execution behaviour.
+
+During the active collection period:
+
+- Strategy parameters are not changed in response to individual outcomes.
+- Low trade frequency is treated as an observation, not a reason to relax filters.
+- Infrastructure or data issues are separated from strategy changes.
+- Original signal and engine-run history is preserved.
+- Proposed improvements are documented for future experiments rather than
+  immediately applied to the active strategy.
+
+The goal is to accumulate prospective evidence while reducing the risk of
+overfitting the strategy to observations it has already seen.
+
+### Research Data Layer
+
+Operational CSV logs remain the live source of truth for the paper-trading engine.
+
+A separate SQLite research database provides a read-only analytical layer for:
+
+- Signal and regime analysis
+- Filter rejection analysis
+- Engine-run integrity
+- Completed trade analysis
+- Cross-market comparison
+- SQL-based research queries
+
+The research database does not feed decisions back into the trading engine.
+
+See `FORWARD_TEST_PROTOCOL.md` for the complete experimental protocol and
+`research_journal.md` for documented observations and hypotheses.
+
 ## Design Philosophy
 
 - Risk first
@@ -105,17 +150,22 @@ why the system chooses not to trade.
 
 ## Current Testing Stage
 
-The engine is currently undergoing automated paper forward testing.
+The engine is currently undergoing automated prospective paper forward testing
+on ETC-USD and BTC-USD.
 
-Rather than optimizing parameters after every observation, the current
-version is being allowed to accumulate unseen market observations.
+The active strategy configuration is frozen while new market observations
+accumulate. The purpose of this stage is to evaluate:
 
-Initial review checkpoints:
+- Infrastructure reliability and data continuity
+- Regime distribution across markets
+- Raw and qualifying signal frequency
+- Filter rejection behaviour
+- Completed paper-trade outcomes
+- Differences in strategy behaviour across assets and market conditions
 
-- 50 completed candle checks
-- 100 completed candle checks
-- First qualifying paper trades
-- Sufficient closed trades for meaningful performance analysis
+The forward-test sample is still developing, particularly for completed trades
+and RANGE-regime observations. Performance conclusions are therefore intentionally
+deferred until substantially more evidence has accumulated.
 
 No real capital is being deployed.
 
@@ -123,43 +173,106 @@ No real capital is being deployed.
 
 ## Technology
 
-- Python
-- pandas
-- Streamlit
-- CSV-based persistent logging
-- Automated scheduled execution
-- Git / GitHub
+- **Python** — core engine, position management, data processing, and automation
+- **pandas** — market-data transformation and research analysis
+- **SQLite / SQL** — analytical research database and reusable research queries
+- **Streamlit** — forward-test monitoring and analytics dashboard
+- **yfinance** — hourly OHLC market-data retrieval
+- **CSV persistence** — operational signal, position, trade, and engine-run logs
+- **Windows Task Scheduler** — automated hourly paper-engine execution
+- **Git / GitHub** — version control, research history, and project documentation
+
 
 ---
 
+## Project Structure
+
+```text
+market-regime-risk-engine/
+│
+├── src/
+│   ├── paper_trader_v3_position_manager.py
+│   │   └── Paper-trading engine and position management
+│   │
+│   ├── paper_trading_dashboard_v2.1.py
+│   │   └── Streamlit forward-test monitoring dashboard
+│   │
+│   ├── build_research_db.py
+│   │   └── Builds the SQLite analytical research database
+│   │
+│   └── analysis/
+│       └── Operational paper-trading logs and research data
+│
+├── sql/
+│   └── research_examples.sql
+│       └── Reusable SQL research queries
+│
+├── FORWARD_TEST_PROTOCOL.md
+│   └── Frozen strategy configuration and experimental protocol
+│
+├── research_journal.md
+│   └── Forward-test observations, hypotheses, and review history
+│
+└── README.md
+    └── Project overview and documentation
+```
+
+
 ## Limitations
 
-- Current forward-test sample size is still small
-- The system is rule-based rather than predictive
-- Results may vary significantly across market regimes and assets
-- Historical or paper performance does not guarantee live performance
-- Transaction costs, liquidity, slippage, and execution behaviour require
-  further validation before any live deployment
+This project is an active research system and should not be interpreted as a validated trading strategy.
 
+Current limitations include:
+
+- The prospective forward-test sample is still developing.
+- Completed trade count is currently too small for reliable performance conclusions.
+- RANGE-regime observations remain relatively limited.
+- Market data is sourced through yfinance and may be subject to availability or timing issues.
+- Paper execution does not reproduce all real-world effects such as slippage, liquidity constraints, fees, or order-book dynamics.
+- Current research focuses on a small number of cryptocurrency markets.
+- Strategy parameters remain frozen during the active forward-test period.
+
+Results from the paper-trading environment are research observations, not evidence of future profitability.
 ---
 
 ## Roadmap
 
-- Expand forward-test dataset
-- Validate strategy behaviour across additional market conditions
-- Improve trade and rejection analytics
-- Add multi-asset monitoring
-- Compare regime-specific performance
-- Strengthen risk analytics
-- Explore statistical regime models
-- Investigate machine-learning classification after establishing a
-  reliable rule-based baseline
+### Current — Forward-Test Validation
+
+- Continue automated ETC-USD and BTC-USD paper forward testing
+- Accumulate a larger sample of completed trades
+- Monitor data continuity and engine-run reliability
+- Analyze regime frequency and filter behaviour across markets
+- Document observations without modifying the frozen strategy
+
+### Next — Research & Evaluation
+
+- Evaluate trade expectancy and R-multiple distribution once sample size is sufficient
+- Compare strategy behaviour across different market regimes
+- Expand SQL-based research and diagnostic analysis
+- Improve reproducibility of research reports and experiments
+- Investigate potential strategy improvements as separate experiments
+
+### Later — Platform Expansion
+
+- Add additional asset classes and markets
+- Develop richer portfolio-level risk analytics
+- Explore market-specific calibration only when supported by forward-test evidence
+- Build a more complete decision-intelligence layer around regime, risk, and confidence
+- Evaluate live execution only after research, infrastructure, and risk-control requirements are met
 
 ---
 
-## Project Status
+## Status
 
-**Active Development — Automated Paper Forward Testing**
+**Active development — prospective paper forward testing**
 
-The current priority is collecting forward-test evidence and evaluating
-whether the strategy behaves as expected outside its development data.
+- ETC-USD and BTC-USD monitored on completed hourly candles
+- Automated paper-trading engine active
+- Strategy configuration frozen under the documented forward-test protocol
+- Real-money order execution disabled
+- Signal, trade, and engine-run history preserved for research
+- SQLite and SQL research layer active
+- Streamlit monitoring and analytics dashboard active
+
+The current priority is evidence collection, infrastructure reliability, and disciplined analysis rather than strategy optimization.
