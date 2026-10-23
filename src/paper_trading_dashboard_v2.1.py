@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
+import sqlite3
 
 import pandas as pd
 import streamlit as st
@@ -323,6 +324,51 @@ def build_equity_series(trades: pd.DataFrame) -> pd.DataFrame:
         )
     return pd.DataFrame(rows).set_index("trade")
 
+@st.cache_data(ttl=REFRESH_SECONDS)
+def load_signal_opportunity_audit() -> pd.DataFrame:
+    db_path = Path(__file__).resolve().parent / "analysis" / "market_research.db"
+
+    if not db_path.exists():
+        return pd.DataFrame()
+
+    try:
+        with sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True) as conn:
+            return pd.read_sql_query(
+                """
+                SELECT market, candle_time_utc, decision,
+                       edge_score, minutes_after_close, timing_class
+                FROM signal_opportunity_audit
+                ORDER BY candle_time_utc DESC
+                """,
+                conn,
+            )
+    except (sqlite3.Error, OSError):
+        return pd.DataFrame()
+
+@st.cache_data(ttl=REFRESH_SECONDS)
+def load_signal_conversion_funnel() -> pd.DataFrame:
+    db_path = Path(__file__).resolve().parent / "analysis" / "market_research.db"
+
+    if not db_path.exists():
+        return pd.DataFrame()
+
+    try:
+        with sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True) as conn:
+            return pd.read_sql_query(
+                """
+                SELECT market,
+                       total_observations,
+                       range_observations,
+                       filter_passes,
+                       raw_signals,
+                       qualifying_signals
+                FROM signal_conversion_funnel
+                ORDER BY market
+                """,
+                conn,
+            )
+    except (sqlite3.Error, OSError):
+        return pd.DataFrame()
 
 def main() -> None:
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -1307,8 +1353,117 @@ def main() -> None:
     )
 
 
+    # =========================
+    # SIGNAL OPPORTUNITY AUDIT
+    # =========================
 
+    st.markdown(
+        '<div class="section-title">Signal Opportunity Audit</div>',
+        unsafe_allow_html=True,
+    )
 
+    audit = load_signal_opportunity_audit()
+
+    if audit.empty:
+        st.info(
+            "No qualifying signals found, or the research "
+            "database needs refreshing."
+        )
+    else:
+        total = len(audit)
+        timely = int((audit["timing_class"] == "TIMELY").sum())
+        delayed = total - timely
+
+        audit_cols = st.columns(3)
+
+        audit_cols[0].metric("Qualifying Signals", total)
+        audit_cols[1].metric("Timely Evaluations", timely)
+        audit_cols[2].metric("Delayed / Invalid", delayed)
+
+        st.dataframe(
+            audit.rename(
+                columns={
+                    "market": "Market",
+                    "candle_time_utc": "Candle Time (UTC)",
+                    "decision": "Decision",
+                    "edge_score": "Edge Score",
+                    "minutes_after_close": "Minutes After Close",
+                    "timing_class": "Timing Class",
+                }
+            ),
+            hide_index=True,
+            use_container_width=True,
+        )
+
+        st.caption(
+            "Research-only audit. Timely means evaluated within "
+            "0–15 minutes after the hourly candle closed. "
+            "It does not confirm trade execution. "
+            "Data updates when the research database is refreshed."
+        )
+    # =========================
+    # SIGNAL CONVERSION FUNNEL
+    # =========================
+
+    st.markdown(
+        '<div class="section-title">Signal Conversion Funnel</div>',
+        unsafe_allow_html=True,
+    )
+
+    funnel = load_signal_conversion_funnel()
+
+    if funnel.empty:
+        st.info("No funnel data available. Refresh the research database.")
+    else:
+        stages = [
+            ("Total Observations", "total_observations"),
+            ("RANGE Conditions", "range_observations"),
+            ("RSI + ATR Passed", "filter_passes"),
+            ("Raw Signals", "raw_signals"),
+            ("Qualifying Signals", "qualifying_signals"),
+        ]
+
+        combined = funnel[[column for _, column in stages]].sum()
+
+        st.markdown("##### Combined BTC + ETC")
+
+        for label, column in stages:
+            count = int(combined[column])
+            total = int(combined["total_observations"])
+            percentage = 100.0 * count / total if total else 0.0
+
+            left, right = st.columns([3, 1])
+
+            with left:
+                st.write(f"**{label}**")
+                st.progress(min(percentage / 100.0, 1.0))
+
+            with right:
+                st.metric("Observations", f"{count:,}")
+                st.caption(f"{percentage:.2f}% of total")
+
+        st.markdown("##### Market Comparison")
+
+        st.dataframe(
+            funnel.rename(
+                columns={
+                    "market": "Market",
+                    "total_observations": "Total Observations",
+                    "range_observations": "RANGE Conditions",
+                    "filter_passes": "RSI + ATR Passed",
+                    "raw_signals": "Raw Signals",
+                    "qualifying_signals": "Qualifying Signals",
+                }
+            ),
+            hide_index=True,
+            use_container_width=True,
+        )
+
+        st.caption(
+            "Research-only funnel. Counts represent signal observations, "
+            "not executed trades. Data updates when the SQLite research "
+            "database is refreshed."
+        )
     # --- Forward Test Monitor ---
     st.markdown(
         '<div class="section-title">Forward Test Monitor</div>',

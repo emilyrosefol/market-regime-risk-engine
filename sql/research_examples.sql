@@ -323,3 +323,32 @@ ORDER BY
     market;
 """)
 
+-- ==========================================
+-- SIGNAL OPPORTUNITY AUDIT
+-- Research-only view
+-- ==========================================
+
+CREATE VIEW IF NOT EXISTS signal_opportunity_audit AS
+SELECT
+    market,
+    candle_time_utc,
+    checked_at_utc,
+    decision,
+    edge_score,
+    ROUND(
+        (
+            unixepoch(checked_at_utc)
+            - unixepoch(candle_time_utc, '+1 hour')
+        ) / 60.0,
+        1
+    ) AS minutes_after_close,
+    CASE
+        WHEN (
+            unixepoch(checked_at_utc)
+            - unixepoch(candle_time_utc, '+1 hour')
+        ) / 60.0 BETWEEN 0 AND 15
+        THEN 'TIMELY'
+        ELSE 'DELAYED_OR_INVALID'
+    END AS timing_class
+FROM signal_checks
+WHERE decision != 'WAIT';

@@ -150,7 +150,69 @@ def create_schema(connection: sqlite3.Connection) -> None:
         CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_natural_key
             ON trades (market, entry_time_utc)
             WHERE market IS NOT NULL AND entry_time_utc IS NOT NULL;
+            -- Research-only signal opportunity audit
+CREATE VIEW IF NOT EXISTS signal_opportunity_audit AS
+SELECT
+    market,
+    candle_time_utc,
+    checked_at_utc,
+    decision,
+    edge_score,
+    ROUND(
+        (
+            unixepoch(checked_at_utc)
+            - unixepoch(candle_time_utc, '+1 hour')
+        ) / 60.0,
+        1
+    ) AS minutes_after_close,
+    CASE
+        WHEN (
+            unixepoch(checked_at_utc)
+            - unixepoch(candle_time_utc, '+1 hour')
+        ) / 60.0 BETWEEN 0 AND 15
+        THEN 'TIMELY'
+        ELSE 'DELAYED_OR_INVALID'
+    END AS timing_class
+FROM signal_checks
+WHERE decision != 'WAIT';
+        -- Research-only signal conversion funnel
+CREATE VIEW IF NOT EXISTS signal_conversion_funnel AS
+SELECT
+    market,
+    COUNT(*) AS total_observations,
+
+    SUM(CASE WHEN regime = 'RANGE' THEN 1 ELSE 0 END)
+        AS range_observations,
+
+    SUM(
+        CASE WHEN regime = 'RANGE'
+             AND rsi BETWEEN 30 AND 60
+             AND atr_pct BETWEEN 0.001 AND 0.01
+        THEN 1 ELSE 0 END
+    ) AS filter_passes,
+
+    SUM(
+        CASE WHEN regime = 'RANGE'
+             AND rsi BETWEEN 30 AND 60
+             AND atr_pct BETWEEN 0.001 AND 0.01
+             AND raw_decision != 'WAIT'
+             AND raw_decision IS NOT NULL
+        THEN 1 ELSE 0 END
+    ) AS raw_signals,
+
+    SUM(
+        CASE WHEN regime = 'RANGE'
+             AND rsi BETWEEN 30 AND 60
+             AND atr_pct BETWEEN 0.001 AND 0.01
+             AND decision != 'WAIT'
+             AND decision IS NOT NULL
+        THEN 1 ELSE 0 END
+    ) AS qualifying_signals
+
+FROM signal_checks
+GROUP BY market;
         """
+
     )
 
 

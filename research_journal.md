@@ -466,4 +466,195 @@ At the next review:
 - Review additional completed trades individually.
 - Compare cumulative R only after the trade sample grows.
 - Continue monitoring scheduler and engine-run integrity.
-- 
+
+## Entry 003 — Forward-Test Research Checkpoint
+
+**Review date:** October 9, 2026  
+**Data snapshot:** October 6, 2026  
+**Strategy status:** Frozen — no parameter changes
+
+### 1. Forward-Test Summary
+
+- Total signal observations: **2,143**
+- BTC-USD observations: **1,020**
+- ETC-USD observations: **1,123**
+- Total completed paper trades: **2**
+- Qualifying signal observations: **3**
+- Confirmed actionable paper entries: **2**
+- Historical/catch-up qualifying observations: **1**
+
+### 2. Market Comparison
+
+| Metric | BTC-USD | ETC-USD |
+|---|---:|---:|
+| Observations | 1,020 | 1,123 |
+| TREND observations | 961 | 1,086 |
+| RANGE observations | 59 | 37 |
+| Average RSI | 51.90 | 51.01 |
+| Average ATR% | 0.512% | 1.224% |
+| RSI rejection rate | 39.2% | 36.2% |
+| ATR rejection rate | 1.3% | 55.7% |
+| Completed trades | 2 | 0 |
+
+### 3. Key Observations
+
+**Cross-market volatility differences**
+
+ETC continues to experience substantially more ATR-based rejection than BTC. The difference remains visible as the forward-test sample grows.
+
+This supports continued investigation of how the fixed volatility gate interacts with different markets. It does not justify changing the threshold during the active experiment.
+
+**Market regime distribution**
+
+TREND remains the dominant classification in both markets. RANGE observations have increased, but still represent a small portion of the sample.
+
+**Signal selectivity**
+
+Only three observations produced qualifying signals across 2,143 signal checks.
+
+Two were actionable BTC entries. One ETC qualifying signal was identified during historical catch-up processing.
+
+### 4. Qualifying Signal Audit
+
+**ETC — September 1, 2026**
+
+- Signal: GO_FAKE_LONG
+- Edge score: 75
+- Candle timestamp: September 1, 13:00 UTC
+- Evaluation timestamp: September 2, 13:51 UTC
+- Classification: Historical/catch-up observation
+- No completed trade recorded
+
+**BTC — September 13, 2026**
+
+- Signal: GO_FAKE_SHORT
+- Edge score: 80
+- Evaluated approximately 5 minutes after candle completion
+- Completed trade: +2R / +$200
+
+**BTC — September 26, 2026**
+
+- Signal: GO_FAKE_SHORT
+- Edge score: 80
+- Evaluated approximately 9 minutes after candle completion
+- Completed trade: −1R / −$100
+
+### 5. Trade Performance — Descriptive Only
+
+- Completed trades: 2
+- Winners: 1
+- Losers: 1
+- Net result: +1R / +$100
+- Observed average: +0.5R per trade
+
+The sample is insufficient for conclusions about profitability, expectancy, win rate, or robustness.
+
+### 6. Research Hypotheses
+
+1. Market-specific volatility characteristics may eventually require separate calibration experiments.
+2. Low RANGE frequency may contribute to the small number of qualifying entries.
+3. Rapid post-entry transitions from RANGE to TREND may be relevant to fake-breakout outcomes.
+4. Separating historical qualifying observations from actionable entries may improve future reporting.
+
+All hypotheses remain unvalidated.
+
+### 7. Decision
+
+**No strategy changes.**
+
+Continue collecting prospective data under the frozen configuration.
+
+Next planned checkpoint: **Trade #3 or approximately 2,500 observations**, whichever occurs first.
+
+Infrastructure reliability and data integrity should continue to be monitored separately from strategy performance.
+
+# Research Journal — Entry 004
+
+**Checkpoint:** 2,500+ Forward-Test Observations  
+**Data through:** October 16, 2026  
+**Research status:** Strategy frozen; paper trading only
+
+## 1. Dataset Integrity
+
+- Total signal observations: 2,625
+- BTC-USD observations: 1,261
+- ETC-USD observations: 1,364
+- Engine runs: 674
+- Completed paper trades: 2
+- Duplicate-key count: 0
+
+The research database refreshed successfully, and the Signal Opportunity Audit view remained accessible.
+
+## 2. Market Regime Distribution
+
+| Market | TREND | RANGE |
+|---|---:|---:|
+| BTC-USD | 93.42% | 6.58% |
+| ETC-USD | 96.99% | 3.01% |
+
+Only 124 of 2,625 observations (4.72%) were classified as RANGE.
+
+## 3. RSI and ATR Filters
+
+BTC-USD:
+- Average RSI: 51.11
+- Average ATR: 0.507%
+- RSI outside limits: 39.57%
+- ATR outside limits: 1.03%
+
+ETC-USD:
+- Average RSI: 50.44
+- Average ATR: 1.164%
+- RSI outside limits: 36.88%
+- ATR outside limits: 50.51%
+
+ETC experiences substantially more volatility-filter exclusions overall.
+
+## 4. RANGE Opportunity Funnel
+
+Among RANGE observations:
+
+- BTC: 83 observations, all 83 passed RSI and ATR.
+- ETC: 41 observations, 34 passed RSI and ATR.
+- Combined: 117 observations passed both filters.
+
+Of those 117 observations:
+- 111 produced no raw entry signal.
+- 6 produced a raw entry signal.
+- 3 raw signals were rejected by final strategy requirements.
+- 3 passed all entry filters.
+
+## 5. Signal Timing Audit
+
+Three qualifying signals were recorded:
+
+- BTC-USD: GO_FAKE_SHORT, evaluated 5.0 minutes after candle close.
+- BTC-USD: GO_FAKE_SHORT, evaluated 9.5 minutes after candle close.
+- ETC-USD: GO_FAKE_LONG, evaluated 1,431.5 minutes after candle close.
+
+Two BTC trades completed. The ETC signal was identified during delayed processing and was not an actionable timely entry.
+
+The 15-minute timing threshold is a provisional research convention, not an execution guarantee.
+
+## 6. Research Interpretation
+
+Low trade frequency appears primarily associated with:
+
+1. The low proportion of RANGE conditions.
+2. The rarity of raw entry signals within RANGE conditions.
+3. Additional final-stage signal filtering.
+
+RSI and ATR do not explain most missing entries within RANGE conditions.
+
+These findings describe the behaviour of the current system. They do not establish profitability or justify modifying trading parameters.
+
+## 7. Next Research Priorities
+
+- Continue collecting forward-test observations.
+- Preserve all frozen strategy parameters.
+- Monitor signal-generation and rejection rates.
+- Examine timely versus delayed qualifying signals.
+- Reassess trade outcomes at future completed-trade checkpoints.
+- Avoid performance conclusions from the current two-trade sample.
+
+**Decision:** No strategy changes. Continue forward testing.
